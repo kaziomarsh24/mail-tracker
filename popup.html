@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MailTracker</title>
+  <style>
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f8fafc;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-focus: #3b82f6;
+      --brand-blue: #2563eb;
+      --brand-blue-hover: #1d4ed8;
+      --badge-sent-bg: #f1f5f9;
+      --badge-sent-text: #475569;
+      --badge-sent-border: #cbd5e1;
+      --badge-deliv-bg: #f0fdfa;
+      --badge-deliv-text: #0f766e;
+      --badge-deliv-border: #99f6e4;
+      --badge-open-bg: #f0fdf4;
+      --badge-open-text: #15803d;
+      --badge-open-border: #bbf7d0;
+      --badge-click-bg: #faf5ff;
+      --badge-click-text: #7e22ce;
+      --badge-click-border: #e9d5ff;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      width: 380px;
+      max-height: 580px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", Helvetica, Arial, sans-serif;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      margin: 0;
+      padding: 16px;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    /* Scrollbar */
+    body::-webkit-scrollbar,
+    .mail-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    body::-webkit-scrollbar-track,
+    .mail-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    body::-webkit-scrollbar-thumb,
+    .mail-list::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    body::-webkit-scrollbar-thumb:hover,
+    .mail-list::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 15px;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+    }
+
+    .brand-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: var(--text-primary);
+    }
+
+    .brand-pill {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 1px 6px;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #bfdbfe;
+      letter-spacing: 0.4px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sync-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+    }
+
+    .sync-dot.syncing {
+      background: #eab308;
+      box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.2);
+      animation: pulse 1s infinite alternate;
+    }
+
+    .sync-dot.offline {
+      background: #94a3b8;
+      box-shadow: none;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.5; }
+      to { opacity: 1; }
+    }
+
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 4px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .refresh-btn svg {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.3s;
+    }
+
+    .refresh-btn.spinning svg {
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Master Card / Quick Controls */
+    .card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .control-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .control-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .control-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Toggle Switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #cbd5e1;
+      transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 22px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    input:checked + .slider {
+      background-color: var(--brand-blue);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(18px);
+    }
+
+    /* Primary Action Button */
+    .btn-test {
+      width: 100%;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      color: #ffffff;
+      border: none;
+      padding: 9px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 2px 4px rgba(15, 23, 42, 0.15);
+    }
+
+    .btn-test:hover {
+      background: linear-gradient(135deg, #334155 0%, #1e293b 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(15, 23, 42, 0.2);
+    }
+
+    .btn-test:active {
+      transform: translateY(0);
+    }
+
+    .btn-test.success {
+      background: #16a34a !important;
+      color: white !important;
+    }
+
+    .btn-test.error {
+      background: #dc2626 !important;
+      color: white !important;
+    }
+
+    /* Quick Stats Bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .stat-pill {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 6px 4px;
+      text-align: center;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .stat-number {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .stat-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--text-muted);
+      margin-top: 1px;
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-secondary);
+    }
+
+    .clear-link {
+      font-size: 11px;
+      color: var(--text-muted);
+      cursor: pointer;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .clear-link:hover {
+      color: #ef4444;
+    }
+
+    /* Tracked Mails List */
+    .mail-list {
+      max-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 2px;
+    }
+
+    .mail-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 10px 12px;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      cursor: pointer;
+    }
+
+    .mail-card:hover {
+      border-color: #38bdf8;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+    }
+
+    .mail-card-drawer {
+      display: none;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+      font-size: 11px;
+    }
+
+    .mail-card.expanded .mail-card-drawer {
+      display: block;
+    }
+
+    .drawer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 3px;
+      color: var(--text-secondary);
+    }
+
+    .drawer-item b {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .btn-dashboard {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #2563eb;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 3px 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.15s;
+    }
+
+    .btn-dashboard:hover {
+      background: #dbeafe;
+    }
+
+    .mail-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .mail-recipient {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-primary);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 220px;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 12px;
+      white-space: nowrap;
+      letter-spacing: 0.2px;
+    }
+
+    .status-badge.sent {
+      background: var(--badge-sent-bg);
+      color: var(--badge-sent-text);
+      border: 1px solid var(--badge-sent-border);
+    }
+
+    .status-badge.delivered {
+      background: var(--badge-deliv-bg);
+      color: var(--badge-deliv-text);
+      border: 1px solid var(--badge-deliv-border);
+    }
+
+    .status-badge.opened {
+      background: var(--badge-open-bg);
+      color: var(--badge-open-text);
+      border: 1px solid var(--badge-open-border);
+    }
+
+    .status-badge.clicked {
+      background: var(--badge-click-bg);
+      color: var(--badge-click-text);
+      border: 1px solid var(--badge-click-border);
+    }
+
+    .mail-subject {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .mail-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+      border-top: 1px solid #f8fafc;
+      padding-top: 4px;
+    }
+
+    .mail-time {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .mail-extra {
+      font-weight: 600;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 30px 16px;
+      background: var(--bg-primary);
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .empty-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .empty-desc {
+      font-size: 11px;
+      line-height: 1.4;
+      color: var(--text-muted);
+    }
+
+    /* Bottom Status Footer */
+    .footer {
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .footer-telegram {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .footer-telegram span {
+      color: #0284c7;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="header">
+    <div class="brand">
+      <div class="brand-icon">📨</div>
+      <div class="brand-title">MailTracker</div>
+      <span class="brand-pill">ACTIVE</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-dashboard" id="openDashboardBtn" title="Open Full-Screen Dashboard">📊 Full UI ↗</button>
+      <div class="sync-indicator">
+        <span class="sync-dot" id="syncDot" title="Live sync with Cloudflare Worker"></span>
+        <span id="syncText">Live</span>
+      </div>
+      <button class="refresh-btn" id="refreshBtn" title="Refresh live status">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <polyline points="1 20 1 14 7 14"></polyline>
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Realtime Master Toggles -->
+  <div class="card" style="display:flex; flex-direction:column; gap:10px;">
+    <div class="control-row">
+      <div class="control-text">
+        <div class="control-title">Email Open Tracking</div>
+        <div class="control-subtitle" id="toggleSubtitle">Invisible 1x1 pixel for opens & deliveries</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="trackingToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div style="height:1px; background:var(--border-color);"></div>
+    <div class="control-row">
+      <div class="control-text">
+        <div class="control-title">Link Click Tracking</div>
+        <div class="control-subtitle" id="linkToggleSubtitle">Wrap links with tracker (Turn OFF for raw clean links)</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="linkTrackingToggle" checked>
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Custom Domain Setting Card (Collapsible) -->
+  <div class="card" style="padding:10px 12px; margin-bottom:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="domainToggleHeader">
+      <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">⚙️ Tracker Domain</span>
+      <span style="font-size:10px; color:#0284c7;" id="domainStatusLbl">Default Worker</span>
+    </div>
+    <div id="domainBox" style="display:none; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border-color);">
+      <div style="font-size:10px; color:var(--text-muted); margin-bottom:4px;">Custom Domain (e.g. https://t.snapclip.tech):</div>
+      <div style="display:flex; gap:6px;">
+        <input type="text" id="domainInput" placeholder="https://mailtracker.softeng-kaziomar.workers.dev" style="flex:1; background:var(--bg-primary); border:1px solid var(--border-color); border-radius:6px; padding:5px 8px; font-size:11px; color:var(--text-primary);">
+        <button id="saveDomainBtn" style="background:#0284c7; color:#fff; border:none; border-radius:6px; padding:5px 10px; font-size:11px; font-weight:600; cursor:pointer;">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Alert Button -->
+  <button class="btn-test" id="testBtn">
+    <span>⚡ Send Test Alert to Telegram</span>
+  </button>
+
+  <!-- Quick Stats Counter -->
+  <div class="stats-bar">
+    <div class="stat-pill">
+      <div class="stat-number" id="statSent">0</div>
+      <div class="stat-label">Sent</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-number" id="statDelivered">0</div>
+      <div class="stat-label">Delivered</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-number" id="statOpened">0</div>
+      <div class="stat-label">Opened</div>
+    </div>
+    <div class="stat-pill">
+      <div class="stat-number" id="statClicked">0</div>
+      <div class="stat-label">Clicked</div>
+    </div>
+  </div>
+
+  <!-- Section Header -->
+  <div class="section-header">
+    <span class="section-title">Tracked Emails</span>
+    <span class="clear-link" id="clearBtn">Clear</span>
+  </div>
+
+  <!-- Mail List -->
+  <div class="mail-list" id="mailList">
+    <div class="empty-state">
+      <div class="empty-icon">📬</div>
+      <div class="empty-title">No tracked emails yet</div>
+      <div class="empty-desc">Send an email from Gmail with tracking active to monitor opens, deliveries, and clicks in real time.</div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="footer-telegram">
+      🤖 Telegram Alerts <span>Online</span>
+    </div>
+    <div>Watermark-Free • 100% Private</div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

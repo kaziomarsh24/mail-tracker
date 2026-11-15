@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Personal MailTracker Dashboard</title>
+  <link rel="icon" type="image/png" href="icons/icon48.png">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0284c7;
+      --sent: #94a3b8;
+      --delivered: #2dd4bf;
+      --opened: #4ade80;
+      --clicked: #c084fc;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Inter", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 30px;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+    }
+    .brand-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .brand-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .btn {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn:hover { background: #334155; border-color: var(--primary); }
+    .btn-primary {
+      background: #0284c7;
+      border-color: #0284c7;
+      color: white;
+    }
+    .btn-primary:hover { background: #0369a1; }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .kpi-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .kpi-sent { color: var(--sent); }
+    .kpi-delivered { color: var(--delivered); }
+    .kpi-opened { color: var(--opened); }
+    .kpi-clicked { color: var(--clicked); }
+
+    /* Controls Bar */
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      gap: 12px;
+    }
+    .search-input {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      flex: 1;
+      max-width: 360px;
+    }
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .filter-pills {
+      display: flex;
+      gap: 6px;
+    }
+    .pill {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+    }
+    .pill.active {
+      background: #0284c7;
+      color: white;
+      border-color: #0284c7;
+    }
+
+    /* Table */
+    .table-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    table {
+      width: 100%;
+      min-width: 680px;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    thead {
+      background: #111c2e;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    tbody tr:hover {
+      background: #273549;
+    }
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+    td {
+      padding: 14px 16px;
+      vertical-align: middle;
+    }
+    .mail-to-cell {
+      font-weight: 600;
+      color: #38bdf8;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 14px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-sent { background: rgba(148, 163, 184, 0.15); color: #cbd5e1; border: 1px solid #475569; }
+    .badge-delivered { background: rgba(45, 212, 191, 0.15); color: #2dd4bf; border: 1px solid #0f766e; }
+    .badge-opened { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid #15803d; }
+    .badge-clicked { background: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid #7e22ce; }
+
+    /* Expandable Details Drawer */
+    .detail-row {
+      background: #0f172a !important;
+      display: none;
+    }
+    .detail-row.open {
+      display: table-row;
+    }
+    .detail-container {
+      padding: 16px 20px;
+      border-left: 3px solid var(--primary);
+    }
+    .timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .timeline-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .timeline-title {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .empty-state {
+      padding: 50px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .del-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+    .del-btn:hover {
+      color: #ef4444;
+      background: rgba(239, 68, 68, 0.15);
+      transform: scale(1.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="brand">
+        <img src="icons/icon128.png" alt="Logo" class="brand-icon">
+        <div>
+          <div class="brand-title">MailTracker Intelligence</div>
+          <div class="brand-subtitle">Real-time Email Analytics & Engagement Monitor</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" id="refreshBtn">🔄 Refresh Data</button>
+        <button class="btn btn-primary" id="exportBtn">📥 Export CSV</button>
+        <button class="btn" id="clearAllBtn" style="color:#f87171; border-color:#7f1d1d;">🗑️ Clear All</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-label">Total Sent</span>
+        <span class="kpi-value kpi-sent" id="kpiSent">0</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Delivered to Inbox</span>
+        <span class="kpi-value kpi-delivered" id="kpiDelivered">0</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Opened & Read</span>
+        <span class="kpi-value kpi-opened" id="kpiOpened">0</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-label">Links Clicked</span>
+        <span class="kpi-value kpi-clicked" id="kpiClicked">0</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="searchInput" class="search-input" placeholder="🔍 Search recipient, subject, or tag...">
+      <div class="filter-pills">
+        <span class="pill active" data-filter="all">All</span>
+        <span class="pill" data-filter="OPENED">Opened</span>
+        <span class="pill" data-filter="DELIVERED">Delivered</span>
+        <span class="pill" data-filter="CLICKED">Clicked</span>
+        <span class="pill" data-filter="SENT">Unopened</span>
+      </div>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th>Recipient</th>
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Opens</th>
+            <th>Sent At</th>
+            <th>Last Activity</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="mailTableBody">
+          <tr>
+            <td colspan="7" class="empty-state">Loading tracked emails...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
