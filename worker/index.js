@@ -132,19 +132,34 @@ async function handleEvent(request, url, env, ctx) {
   const now = Date.now();
   const sentAt = sentTime ? parseInt(sentTime, 10) : now;
 
-  const emailRecord = {
-    id: id,
-    to: to || "Unknown Recipient",
-    subject: subject || "Important Email",
-    status: "SENT",
-    sentAt: sentAt,
-    deliveredAt: null,
-    lastOpenedAt: null,
-    openCount: 0,
-    lastClickedAt: null,
-    clicks: [],
-    history: [{ event: "SENT", timestamp: sentAt, details: "Sent from Gmail" }],
-  };
+  const existing = await getEmailRecord(id, env);
+  let emailRecord;
+  if (existing) {
+    emailRecord = {
+      ...existing,
+      to: (to && to !== "Unknown Recipient") ? to : (existing.to || "Unknown Recipient"),
+      subject: (subject && subject !== "Important Email") ? subject : (existing.subject || "Important Email"),
+      sentAt: existing.sentAt || sentAt,
+    };
+    if (!emailRecord.history) emailRecord.history = [];
+    if (!emailRecord.history.some(h => h.event === "SENT")) {
+      emailRecord.history.unshift({ event: "SENT", timestamp: sentAt, details: "Sent from Gmail" });
+    }
+  } else {
+    emailRecord = {
+      id: id,
+      to: to || "Unknown Recipient",
+      subject: subject || "Important Email",
+      status: "SENT",
+      sentAt: sentAt,
+      deliveredAt: null,
+      lastOpenedAt: null,
+      openCount: 0,
+      lastClickedAt: null,
+      clicks: [],
+      history: [{ event: "SENT", timestamp: sentAt, details: "Sent from Gmail" }],
+    };
+  }
 
   await saveEmailRecord(emailRecord, env);
 
@@ -368,6 +383,14 @@ async function handleClick(request, url, env, ctx) {
 
 // 4. /api/status : Live JSON API for Extension UI
 async function handleStatus(request, url, env, ctx) {
+  const id = url.searchParams.get("id");
+  if (id) {
+    const email = await getEmailRecord(id, env);
+    return new Response(JSON.stringify({ success: true, email }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
   const emails = await getAllEmails(env);
   return new Response(JSON.stringify({ success: true, total: emails.length, emails }), {
     status: 200,

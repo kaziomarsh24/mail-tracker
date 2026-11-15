@@ -263,22 +263,23 @@ function armTracking(triggerEl) {
     console.log("[Mail Tracker] Link tracking is OFF for this email - links kept 100% direct & raw!");
   }
 
-  // 2. Inject clean tracking pixel with only random ID (Protects BCC & Subject from leaking in email HTML source)
-  const trackUrl = `${workerUrl}/track?id=${encodeURIComponent(trackId)}`;
+  // 2. Inject clean tracking pixel with random ID & send timestamp
+  const trackUrl = `${workerUrl}/track?id=${encodeURIComponent(trackId)}&st=${sentTime}`;
   const pixelImg = `<img src="${trackUrl}" width="1" height="1" alt="" data-mail-tracker="true" style="display:none !important; min-height:1px !important; min-width:1px !important; border:0 !important; margin:0 !important; padding:0 !important;" />`;
   bodyEl.insertAdjacentHTML("beforeend", pixelImg);
 
-  // 3. Register email via /event
+  // 3. Register email via /event (Dispatched via background service worker to bypass Gmail CSP)
   const eventUrl = `${workerUrl}/event?type=sent&id=${encodeURIComponent(trackId)}&to=${encodeURIComponent(recipients)}&subj=${encodeURIComponent(subject)}&st=${sentTime}`;
+  try {
+    chrome.runtime.sendMessage({ action: "register_event", url: eventUrl });
+  } catch (_) {}
   try {
     if (navigator.sendBeacon) {
       navigator.sendBeacon(eventUrl);
     } else {
       fetch(eventUrl, { method: 'GET', keepalive: true, mode: 'no-cors' }).catch(() => {});
     }
-  } catch (_) {
-    fetch(eventUrl, { method: 'GET', keepalive: true, mode: 'no-cors' }).catch(() => {});
-  }
+  } catch (_) {}
 
   // 4. Save to chrome.storage.local
   const newRecord = {
@@ -458,10 +459,28 @@ function injectThreadBadges() {
 
     const cleanRowSubj = rowSubj.toLowerCase().replace(/^(re|fwd):\s*/i, '').trim();
 
+    // Also extract row recipient/sender text for robust fallback matching
+    const recipEl = row.querySelector('.yX .yW span, span.yP, span.zF, td.yX');
+    const rowRecip = (recipEl?.textContent || "").toLowerCase().replace(/^to:\s*/i, '').trim();
+
     const match = cachedTrackedMails.find((m) => {
-      if (!m.subject) return false;
-      const cleanMSubj = m.subject.toLowerCase().replace(/^(re|fwd):\s*/i, '').trim();
-      return cleanMSubj === cleanRowSubj || cleanRowSubj.includes(cleanMSubj) || cleanMSubj.includes(cleanRowSubj);
+      const cleanMSubj = (m.subject || "").toLowerCase().replace(/^(re|fwd):\s*/i, '').trim();
+      const cleanMTo = (m.to || "").toLowerCase();
+
+      // 1. Direct or partial subject match
+      if (cleanMSubj && cleanRowSubj && (cleanMSubj === cleanRowSubj || cleanRowSubj.includes(cleanMSubj) || cleanMSubj.includes(cleanRowSubj))) {
+        return true;
+      }
+
+      // 2. Fallback: If subject was generic or empty, match recipient in sent list
+      if (rowRecip && cleanMTo) {
+        const username = cleanMTo.split('@')[0];
+        if (cleanMTo.includes(rowRecip) || rowRecip.includes(username) || rowRecip.includes(cleanMTo)) {
+          return true;
+        }
+      }
+
+      return false;
     });
 
     if (!match) return;
@@ -477,6 +496,8 @@ function injectThreadBadges() {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         cursor: default;
         user-select: none;
+        vertical-align: middle;
+        flex-shrink: 0;
       `;
       subjEl.parentNode.insertBefore(badge, subjEl);
     }
@@ -503,15 +524,21 @@ function injectThreadBadges() {
 // Periodically sync live status so Gmail checkmarks turn green in real-time
 async function syncGmailTrackedStatus() {
   try {
-    const res = await fetch(`${workerUrl}/api/status?key=${encodeURIComponent(DEFAULT_ADMIN_SECRET)}`, { cache: 'no-store' });
-    if (res.ok) {
-      const data = await res.json();
-      const list = data.emails || [];
-      if (list.length > 0) {
-        cachedTrackedMails = list;
-        injectThreadBadges();
+    chrome.runtime.sendMessage(
+      {
+        action: 'fetch_status',
+        url: `${workerUrl}/api/status?key=${encodeURIComponent(DEFAULT_ADMIN_SECRET)}`,
+      },
+      (res) => {
+        if (res && res.success && res.data) {
+          const list = res.data.emails || (Array.isArray(res.data) ? res.data : []);
+          if (list.length > 0) {
+            cachedTrackedMails = list;
+            injectThreadBadges();
+          }
+        }
       }
-    }
+    );
   } catch (_) {}
 }
 
@@ -563,6 +590,9 @@ function pingSentBoxMute() {
 
   safeStorageGet(['workerUrl'], (res) => {
     const targetUrl = (res?.workerUrl || workerUrl || DEFAULT_WORKER_URL) + '/api/sent-mute?key=' + encodeURIComponent(DEFAULT_ADMIN_SECRET);
+    try {
+      chrome.runtime.sendMessage({ action: 'sent_mute', url: targetUrl });
+    } catch (_) {}
     try {
       if (navigator.sendBeacon) {
         navigator.sendBeacon(targetUrl);

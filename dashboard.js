@@ -57,7 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
             remoteList.forEach(m => map.set(m.id, m));
             allMails.forEach(local => {
               if (map.has(local.id)) {
-                map.set(local.id, { ...local, ...map.get(local.id) });
+                const remote = map.get(local.id);
+                const to = (remote.to && remote.to !== "Unknown Recipient") ? remote.to : (local.to || remote.to);
+                const subject = (remote.subject && remote.subject !== "Important Email" && remote.subject !== "(No Subject)") 
+                  ? remote.subject 
+                  : (local.subject || remote.subject);
+                map.set(local.id, { ...local, ...remote, to, subject });
               } else {
                 map.set(local.id, local);
               }

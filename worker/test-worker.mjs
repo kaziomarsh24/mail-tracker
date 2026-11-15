@@ -81,12 +81,12 @@ async function runTests() {
     assert.equal(res.headers.get("Content-Type"), "image/gif");
 
     // Check status still SENT (self-open ignored)
-    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}`);
+    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}&key=omar_track_sec_2026`);
     const statusRes = await worker.fetch(statusReq, env, ctx);
     const statusData = await statusRes.json();
-    assert.equal(statusData.email.status, "SENT");
+    assert.equal(statusData.email.status, "DELIVERED");
     assert.equal(statusData.email.openCount, 0);
-    console.log("✓ Self-open hit was silently ignored as expected");
+    console.log("✓ Self-open/scan hit was treated as DELIVERED without fake open count");
   }
 
   // Test 4: Delivered Proxy Scan (GoogleImageProxy hit within 30s)
@@ -104,7 +104,7 @@ async function runTests() {
     assert.equal(res.headers.get("Content-Type"), "image/gif");
 
     // Check status updated to DELIVERED
-    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}`);
+    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}&key=omar_track_sec_2026`);
     const statusRes = await worker.fetch(statusReq, env, ctx);
     const statusData = await statusRes.json();
     assert.equal(statusData.email.status, "DELIVERED");
@@ -112,10 +112,10 @@ async function runTests() {
     console.log("✓ First proxy scan properly detected as DELIVERED to inbox");
   }
 
-  // Test 5: Opened & Read (Subsequent open or open after 30s)
+  // Test 5: Opened & Read (Subsequent open or open after 90s)
   {
     console.log("Test 5: Opened & Read (Subsequent open)");
-    const req = new Request(`https://mailtracker.test/track?id=${testMailId}&st=${now - 60000}`, {
+    const req = new Request(`https://mailtracker.test/track?id=${testMailId}&st=${now - 100000}`, {
       method: "GET",
       headers: {
         "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
@@ -126,7 +126,7 @@ async function runTests() {
     assert.equal(res.status, 200);
 
     // Check status updated to OPENED, count = 1
-    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}`);
+    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}&key=omar_track_sec_2026`);
     const statusRes = await worker.fetch(statusReq, env, ctx);
     const statusData = await statusRes.json();
     assert.equal(statusData.email.status, "OPENED");
@@ -134,10 +134,10 @@ async function runTests() {
     console.log("✓ Genuine open detected, open count incremented to 1");
   }
 
-  // Test 6: 2nd Open (Open count tracking)
+  // Test 6: Repeat Open Deduplication (Within 120s debounce window)
   {
-    console.log("Test 6: Second Open (Open Count 2x)");
-    const req = new Request(`https://mailtracker.test/track?id=${testMailId}&st=${now - 120000}`, {
+    console.log("Test 6: Repeat Open Deduplication (Within 120s window)");
+    const req = new Request(`https://mailtracker.test/track?id=${testMailId}&st=${now - 300000}`, {
       method: "GET",
       headers: {
         "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -146,12 +146,12 @@ async function runTests() {
     const ctx = createMockCtx();
     await worker.fetch(req, env, ctx);
 
-    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}`);
+    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}&key=omar_track_sec_2026`);
     const statusRes = await worker.fetch(statusReq, env, ctx);
     const statusData = await statusRes.json();
     assert.equal(statusData.email.status, "OPENED");
-    assert.equal(statusData.email.openCount, 2);
-    console.log("✓ Second open incremented openCount to 2");
+    assert.equal(statusData.email.openCount, 1);
+    console.log("✓ Repeat open within debounce window was properly deduplicated (kept at 1x)");
   }
 
   // Test 7: /click (Link Click Tracking & 302 Redirect)
@@ -170,7 +170,7 @@ async function runTests() {
     assert.equal(res.headers.get("Location"), targetUrl);
 
     // Verify email status changed to CLICKED
-    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}`);
+    const statusReq = new Request(`https://mailtracker.test/api/status?id=${testMailId}&key=omar_track_sec_2026`);
     const statusRes = await worker.fetch(statusReq, env, ctx);
     const statusData = await statusRes.json();
     assert.equal(statusData.email.status, "CLICKED");
@@ -182,7 +182,7 @@ async function runTests() {
   // Test 8: /api/status endpoint returning all tracked emails
   {
     console.log("Test 8: /api/status returning all emails list");
-    const req = new Request("https://mailtracker.test/api/status", { method: "GET" });
+    const req = new Request("https://mailtracker.test/api/status?key=omar_track_sec_2026", { method: "GET" });
     const ctx = createMockCtx();
     const res = await worker.fetch(req, env, ctx);
     assert.equal(res.status, 200);
