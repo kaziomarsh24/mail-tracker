@@ -164,14 +164,14 @@ async function handleEvent(request, url, env, ctx) {
   await saveEmailRecord(emailRecord, env);
 
   const alertText = [
-    `🚀 <b>Email Sent &amp; Armed</b>`,
-    `━━━━━━━━━━━━━━━━━━━━━`,
-    `📬 <b>To:</b> ${escapeHtml(emailRecord.to)}`,
-    `📝 <b>Subject:</b> ${escapeHtml(emailRecord.subject)}`,
-    `🆔 <code>${escapeHtml(emailRecord.id)}</code>`,
-    `⏰ <i>${formatTime(sentAt)}</i>`,
-    `━━━━━━━━━━━━━━━━━━━━━`,
-    `⚡ <i>Real-time tracking active!</i>`,
+    `🚀 <b>EMAIL SENT &amp; ARMED</b>`,
+    `───────────────────────────`,
+    `<b>Recipient</b> : ${escapeHtml(emailRecord.to)}`,
+    `<b>Subject</b>   : ${escapeHtml(emailRecord.subject)}`,
+    `<b>Time</b>      : ${formatTime(sentAt)}`,
+    `<b>Tag ID</b>    : <code>${escapeHtml(emailRecord.id)}</code>`,
+    `───────────────────────────`,
+    `<i>Real-time tracking active</i>`,
   ].join("\n");
 
   ctx.waitUntil(sendTelegram(alertText, env));
@@ -271,14 +271,15 @@ async function handleTrack(request, url, env, ctx) {
 
       // Clean delivery notification (so user knows it arrived safely, NOT that it was read!)
       const deliverAlert = [
-        `📥 <b>Email Delivered to Inbox</b>`,
-        `━━━━━━━━━━━━━━━━━━━━━`,
-        `📬 <b>To:</b> ${escapeHtml(email.to)}`,
-        `📝 <b>Subject:</b> ${escapeHtml(email.subject)}`,
-        `🆔 <code>${escapeHtml(email.id)}</code>`,
-        `⏱️ <b>Delivery Time:</b> ${formatElapsed(elapsed)} after send`,
-        `🤖 <b>Status:</b> Landed safely in inbox (Pre-scanned by Google)`,
-        `⏰ <i>${formatTime(now)}</i>`,
+        `⚪ <b>EMAIL DELIVERED</b>`,
+        `───────────────────────────`,
+        `<b>Recipient</b> : ${escapeHtml(email.to)}`,
+        `<b>Subject</b>   : ${escapeHtml(email.subject)}`,
+        `<b>Status</b>    : Landed in inbox (scanned by Google)`,
+        `<b>Time</b>      : ${formatTime(now)} (${formatElapsed(elapsed)} after send)`,
+        `<b>Tag ID</b>    : <code>${escapeHtml(email.id)}</code>`,
+        `───────────────────────────`,
+        `<i>Safe delivery confirmed</i>`,
       ].join("\n");
 
       ctx.waitUntil(sendTelegram(deliverAlert, env));
@@ -314,18 +315,16 @@ async function handleTrack(request, url, env, ctx) {
   await saveEmailRecord(email, env);
 
   const openAlert = [
-    `👀 <b>Email Opened &amp; Read!</b> (Open #${email.openCount})`,
-    `━━━━━━━━━━━━━━━━━━━━━`,
-    `📬 <b>To:</b> ${escapeHtml(email.to)}`,
-    `📝 <b>Subject:</b> ${escapeHtml(email.subject)}`,
-    `🆔 <code>${escapeHtml(email.id)}</code>`,
-    `🔢 <b>Total Opens:</b> ${email.openCount}x`,
-    `⏱️ <b>Time Since Sent:</b> ${formatElapsed(elapsed)}`,
-    `📱 <b>Device:</b> ${escapeHtml(friendlyDevice)}`,
-    `🌍 <b>Location:</b> ${escapeHtml(locationStr)}`,
-    `⏰ <i>${formatTime(now)}</i>`,
-    `━━━━━━━━━━━━━━━━━━━━━`,
-    `🔥 <i>Recipient is viewing your message right now!</i>`,
+    `🟢 <b>EMAIL OPENED · ${email.openCount}x</b>`,
+    `───────────────────────────`,
+    `<b>Recipient</b> : ${escapeHtml(email.to)}`,
+    `<b>Subject</b>   : ${escapeHtml(email.subject)}`,
+    `<b>Device</b>    : ${escapeHtml(friendlyDevice)}`,
+    `<b>Location</b>  : ${escapeHtml(locationStr)}`,
+    `<b>Time</b>      : ${formatTime(now)} (${formatElapsed(elapsed)} after send)`,
+    `<b>Tag ID</b>    : <code>${escapeHtml(email.id)}</code>`,
+    `───────────────────────────`,
+    `<i>Recipient is reading your message right now</i>`,
   ].join("\n");
 
   ctx.waitUntil(sendTelegram(openAlert, env));
@@ -378,17 +377,17 @@ async function handleClick(request, url, env, ctx) {
 
   if (!isRapidRepeat) {
     const clickAlert = [
-      `🎯 <b>Link Clicked in Email!</b>`,
-      `━━━━━━━━━━━━━━━━━━━━━`,
-      `📬 <b>To:</b> ${escapeHtml(email.to)}`,
-      `📝 <b>Subject:</b> ${escapeHtml(email.subject)}`,
-      `🆔 <code>${escapeHtml(email.id)}</code>`,
-      `🔗 <b>Clicked URL:</b> <code>${escapeHtml(targetUrl)}</code>`,
-      `📱 <b>Device:</b> ${escapeHtml(clickDevice)}`,
-      `🌍 <b>Location:</b> ${escapeHtml(clickLocation)}`,
-      `⏰ <i>${formatTime(now)}</i>`,
-      `━━━━━━━━━━━━━━━━━━━━━`,
-      `🚀 <i>High-intent engagement detected!</i>`,
+      `⚡ <b>LINK CLICKED IN EMAIL</b>`,
+      `───────────────────────────`,
+      `<b>Recipient</b> : ${escapeHtml(email.to)}`,
+      `<b>Subject</b>   : ${escapeHtml(email.subject)}`,
+      `<b>URL</b>       : <code>${escapeHtml(targetUrl)}</code>`,
+      `<b>Device</b>    : ${escapeHtml(clickDevice)}`,
+      `<b>Location</b>  : ${escapeHtml(clickLocation)}`,
+      `<b>Time</b>      : ${formatTime(now)}`,
+      `<b>Tag ID</b>    : <code>${escapeHtml(email.id)}</code>`,
+      `───────────────────────────`,
+      `<i>High-intent engagement detected</i>`,
     ].join("\n");
 
     ctx.waitUntil(sendTelegram(clickAlert, env));
@@ -861,31 +860,24 @@ function escapeHtml(str) {
 }
 
 function parseUserAgent(ua, isProxy) {
-  if (isProxy) return "📧 Gmail App / Google Proxy";
+  if (isProxy) return "Gmail App / Google Proxy";
   if (!ua) return "Unknown Device";
 
   // Operating System / Device Type
   let os = "Desktop";
-  let icon = "💻";
 
   if (/iphone/i.test(ua)) {
     os = "iPhone";
-    icon = "📱";
   } else if (/ipad/i.test(ua)) {
     os = "iPad";
-    icon = "📱";
   } else if (/android/i.test(ua)) {
     os = "Android";
-    icon = "📱";
   } else if (/macintosh|mac os x/i.test(ua)) {
     os = "Mac";
-    icon = "💻";
   } else if (/windows nt/i.test(ua)) {
     os = "Windows PC";
-    icon = "🪟";
   } else if (/linux/i.test(ua)) {
     os = "Linux PC";
-    icon = "🖥️";
   }
 
   // Browser / Email Client
@@ -904,5 +896,5 @@ function parseUserAgent(ua, isProxy) {
     client = "Safari / Apple Mail";
   }
 
-  return `${icon} ${os}${client ? ` (${client})` : ""}`;
+  return `${os}${client ? ` (${client})` : ""}`;
 }
