@@ -300,10 +300,17 @@ async function handleTrack(request, url, env, ctx) {
   if (!email.deliveredAt) email.deliveredAt = now;
   if (email.status !== "CLICKED") email.status = "OPENED";
 
-  const device = isProxy ? "Gmail App / Google Web" : userAgent.substring(0, 50);
+  const rawDevice = isProxy ? "Gmail App / Google Web" : userAgent.substring(0, 50);
+  const friendlyDevice = parseUserAgent(userAgent, isProxy);
   const locationStr = isProxy ? `${city}, ${country} (Google Server Proxy)` : `${city}, ${country}`;
 
-  email.history.push({ event: "OPENED", timestamp: now, openNumber: email.openCount });
+  email.history.push({ 
+    event: "OPENED", 
+    timestamp: now, 
+    openNumber: email.openCount,
+    device: friendlyDevice,
+    location: locationStr
+  });
   await saveEmailRecord(email, env);
 
   const openAlert = [
@@ -314,7 +321,7 @@ async function handleTrack(request, url, env, ctx) {
     `🆔 <code>${escapeHtml(email.id)}</code>`,
     `🔢 <b>Total Opens:</b> ${email.openCount}x`,
     `⏱️ <b>Time Since Sent:</b> ${formatElapsed(elapsed)}`,
-    `📱 <b>Client:</b> ${escapeHtml(device)}`,
+    `📱 <b>Device:</b> ${escapeHtml(friendlyDevice)}`,
     `🌍 <b>Location:</b> ${escapeHtml(locationStr)}`,
     `⏰ <i>${formatTime(now)}</i>`,
     `━━━━━━━━━━━━━━━━━━━━━`,
@@ -353,13 +360,20 @@ async function handleClick(request, url, env, ctx) {
     return new Response("Unauthorized or expired tracking ID", { status: 403, headers: corsHeaders });
   }
 
+  const userAgent = request.headers.get("user-agent") || "";
+  const cf = request.cf || {};
+  const country = cf.country || "Unknown Country";
+  const city = cf.city || "Unknown City";
+  const clickDevice = parseUserAgent(userAgent, false);
+  const clickLocation = `${city}, ${country}`;
+
   const isRapidRepeat = email.lastClickedAt && (now - email.lastClickedAt < 8000);
 
   email.status = "CLICKED";
   email.lastClickedAt = now;
   email.clicks = email.clicks || [];
-  email.clicks.push({ url: targetUrl, timestamp: now });
-  email.history.push({ event: "CLICKED", url: targetUrl, timestamp: now });
+  email.clicks.push({ url: targetUrl, timestamp: now, device: clickDevice, location: clickLocation });
+  email.history.push({ event: "CLICKED", url: targetUrl, timestamp: now, device: clickDevice, location: clickLocation });
   await saveEmailRecord(email, env);
 
   if (!isRapidRepeat) {
@@ -370,6 +384,8 @@ async function handleClick(request, url, env, ctx) {
       `📝 <b>Subject:</b> ${escapeHtml(email.subject)}`,
       `🆔 <code>${escapeHtml(email.id)}</code>`,
       `🔗 <b>Clicked URL:</b> <code>${escapeHtml(targetUrl)}</code>`,
+      `📱 <b>Device:</b> ${escapeHtml(clickDevice)}`,
+      `🌍 <b>Location:</b> ${escapeHtml(clickLocation)}`,
       `⏰ <i>${formatTime(now)}</i>`,
       `━━━━━━━━━━━━━━━━━━━━━`,
       `🚀 <i>High-intent engagement detected!</i>`,
@@ -664,7 +680,14 @@ function handleWebDashboard(request, url, env) {
         const hist = m.history || [];
         let histHtml = '';
         if (hist.length > 0) {
-          histHtml = hist.map(h => '<div>• <b>' + esc(h.event) + '</b> (' + new Date(h.timestamp).toLocaleTimeString() + ') ' + esc(h.details || h.url || '') + '</div>').join('');
+          histHtml = hist.map(h => {
+            let meta = '';
+            if (h.device) meta += ' — ' + esc(h.device);
+            if (h.location) meta += ' (' + esc(h.location) + ')';
+            if (h.details) meta += ' ' + esc(h.details);
+            if (h.url) meta += ' [' + esc(h.url) + ']';
+            return '<div>• <b>' + esc(h.event) + '</b> (' + new Date(h.timestamp).toLocaleTimeString() + ')' + meta + '</div>';
+          }).join('');
         } else {
           histHtml = '<div>• SENT to ' + esc(m.to) + '</div>' + (m.lastOpenedAt ? '<div>• OPENED at ' + new Date(m.lastOpenedAt).toLocaleTimeString() + '</div>' : '');
         }
@@ -835,4 +858,51 @@ function formatElapsed(ms) {
 function escapeHtml(str) {
   if (!str) return "";
   return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function parseUserAgent(ua, isProxy) {
+  if (isProxy) return "📧 Gmail App / Google Proxy";
+  if (!ua) return "Unknown Device";
+
+  // Operating System / Device Type
+  let os = "Desktop";
+  let icon = "💻";
+
+  if (/iphone/i.test(ua)) {
+    os = "iPhone";
+    icon = "📱";
+  } else if (/ipad/i.test(ua)) {
+    os = "iPad";
+    icon = "📱";
+  } else if (/android/i.test(ua)) {
+    os = "Android";
+    icon = "📱";
+  } else if (/macintosh|mac os x/i.test(ua)) {
+    os = "Mac";
+    icon = "💻";
+  } else if (/windows nt/i.test(ua)) {
+    os = "Windows PC";
+    icon = "🪟";
+  } else if (/linux/i.test(ua)) {
+    os = "Linux PC";
+    icon = "🖥️";
+  }
+
+  // Browser / Email Client
+  let client = "";
+  if (/thunderbird/i.test(ua)) {
+    client = "Thunderbird Mail";
+  } else if (/outlook/i.test(ua)) {
+    client = "Outlook";
+  } else if (/edg\//i.test(ua)) {
+    client = "Edge";
+  } else if (/chrome|crios/i.test(ua) && !/edg/i.test(ua)) {
+    client = "Chrome";
+  } else if (/firefox|fxios|rv:\d+/i.test(ua)) {
+    client = "Firefox";
+  } else if (/safari/i.test(ua) && !/chrome/i.test(ua)) {
+    client = "Safari / Apple Mail";
+  }
+
+  return `${icon} ${os}${client ? ` (${client})` : ""}`;
 }

@@ -159,14 +159,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const historyList = m.history || [];
       let timelineHtml = "";
       if (historyList.length > 0) {
-        timelineHtml = historyList.map(h => `
+        timelineHtml = historyList.map(h => {
+          let info = h.details || h.proxy || h.url || "";
+          if (h.device) {
+            info = `${h.device}${h.location ? ` • ${h.location}` : ""}${info ? ` (${info})` : ""}`;
+          }
+          return `
           <div class="timeline-item">
             <div class="timeline-dot"></div>
             <span class="timeline-title">${escapeHtml(h.event)}</span>
             <span>${new Date(h.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit', second:'2-digit' })}</span>
-            <span>${escapeHtml(h.details || h.proxy || h.url || h.device || "")}</span>
+            <span>${escapeHtml(info)}</span>
           </div>
-        `).join("");
+        `}).join("");
       } else {
         timelineHtml = `
           <div class="timeline-item"><div class="timeline-dot"></div><span class="timeline-title">SENT:</span> Dispatched to ${escapeHtml(m.to)}</div>
