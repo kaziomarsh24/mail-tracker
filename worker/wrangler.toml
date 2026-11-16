@@ -1,3 +1,4 @@
 name = "mailtracker"
 main = "src/index.js"
 compatibility_date = "2024-11-01"
+account_id = "7db77fd6491eaa083646f2c7cda716f0"
