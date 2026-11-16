@@ -1,4 +1,4 @@
-import worker from './index.js';
+import worker from './src/index.js';
 import assert from 'node:assert/strict';
 
 // Mock execution context
@@ -16,8 +16,8 @@ const createMockCtx = () => {
 
 // Mock environment
 const env = {
-  TELEGRAM_BOT_TOKEN: "9257112796:AAFfo9I4EPJ545F2cbgbYl3DIKG5P2gmips",
-  TELEGRAM_CHAT_ID: "7191826750"
+  TELEGRAM_BOT_TOKEN: "TEST_DUMMY_BOT_TOKEN",
+  TELEGRAM_CHAT_ID: "123456789"
 };
 
 // Mock global caches

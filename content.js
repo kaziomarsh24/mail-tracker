@@ -346,6 +346,9 @@ function enhanceToolbar() {
       vertical-align: middle;
     `;
 
+    const svgEye = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const svgLink = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+
     // 1. Open Tracking Button
     const trackBadge = document.createElement('span');
     trackBadge.className = 'mail-tracker-badge in-group';
@@ -365,7 +368,7 @@ function enhanceToolbar() {
       user-select: none;
       transition: all 0.15s ease;
     `;
-    trackBadge.innerHTML = `📨 Track: <b>ON</b>`;
+    trackBadge.innerHTML = `${svgEye}Track: <b>ON</b>`;
     trackBadge.title = "Toggle Email Open Tracking for this email";
 
     trackBadge.addEventListener('click', (e) => {
@@ -373,13 +376,13 @@ function enhanceToolbar() {
       const isOff = trackBadge.getAttribute('data-off') === 'true';
       if (isOff) {
         trackBadge.removeAttribute('data-off');
-        trackBadge.innerHTML = `📨 Track: <b>ON</b>`;
+        trackBadge.innerHTML = `${svgEye}Track: <b>ON</b>`;
         trackBadge.style.color = '#0d652d';
         trackBadge.style.background = '#e6f4ea';
         trackBadge.style.borderColor = '#ceead6';
       } else {
         trackBadge.setAttribute('data-off', 'true');
-        trackBadge.innerHTML = `📨 Track: <b>OFF</b>`;
+        trackBadge.innerHTML = `${svgEye}Track: <b>OFF</b>`;
         trackBadge.style.color = '#5f6368';
         trackBadge.style.background = '#f1f3f4';
         trackBadge.style.borderColor = '#dadce0';
@@ -394,14 +397,14 @@ function enhanceToolbar() {
     function updateLinkBadgeStyle(off) {
       if (off) {
         linkBadge.setAttribute('data-off', 'true');
-        linkBadge.innerHTML = `🔗 Links: <b>OFF</b>`;
+        linkBadge.innerHTML = `${svgLink}Links: <b>OFF</b>`;
         linkBadge.style.color = '#9a3412';
         linkBadge.style.background = '#ffedd5';
         linkBadge.style.borderColor = '#fed7aa';
         linkBadge.title = "Link tracking is OFF (Raw clean links will be sent)";
       } else {
         linkBadge.removeAttribute('data-off');
-        linkBadge.innerHTML = `🔗 Links: <b>ON</b>`;
+        linkBadge.innerHTML = `${svgLink}Links: <b>ON</b>`;
         linkBadge.style.color = '#6b21a8';
         linkBadge.style.background = '#f3e8ff';
         linkBadge.style.borderColor = '#e9d5ff';
@@ -509,8 +512,10 @@ function injectThreadBadges() {
     if (badge.getAttribute('data-key') === currentKey) return;
     badge.setAttribute('data-key', currentKey);
 
+    const svgInlineLink = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-left:2px;"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+
     if (st === "CLICKED") {
-      badge.innerHTML = `<span style="color:#9333ea; font-weight:800; font-size:12px; letter-spacing:-1px;" title="Link Clicked in Email! (${escapeHtml(match.to)})">✓✓ 🔗</span>`;
+      badge.innerHTML = `<span style="color:#9333ea; font-weight:800; font-size:12px; letter-spacing:-1px;" title="Link Clicked in Email! (${escapeHtml(match.to)})">✓✓ ${svgInlineLink}</span>`;
     } else if (st === "OPENED" || openCount > 0) {
       badge.innerHTML = `<span style="color:#16a34a; font-weight:800; font-size:12px; letter-spacing:-1px;" title="Opened ${openCount}x (${escapeHtml(match.to)})">✓✓ <span style="font-size:10px; font-weight:700;">${openCount}x</span></span>`;
     } else if (st === "DELIVERED") {
