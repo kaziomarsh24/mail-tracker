@@ -44,46 +44,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // Periodic background sync: fetch live status from worker and update chrome.storage.local
 async function syncWorkerStatus() {
   try {
-    chrome.storage.local.get(["workerUrl", "sentMails"], async (st) => {
-      const workerUrl = st.workerUrl || DEFAULT_WORKER_URL;
-      const statusUrl = `${workerUrl}/api/status?key=${encodeURIComponent(DEFAULT_ADMIN_SECRET)}`;
-      
-      const res = await fetch(statusUrl, { cache: "no-store" });
-      if (!res.ok) return;
+    const st = await chrome.storage.local.get(["workerUrl", "sentMails"]);
+    const workerUrl = st.workerUrl || DEFAULT_WORKER_URL;
+    const statusUrl = `${workerUrl}/api/status?key=${encodeURIComponent(DEFAULT_ADMIN_SECRET)}`;
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+    
+    const res = await fetch(statusUrl, { 
+      cache: "no-store",
+      signal: controller.signal 
+    }).catch(() => null);
+    
+    clearTimeout(timeout);
+    if (!res || !res.ok) return;
 
-      const data = await res.json();
-      const remoteList = data.emails || (Array.isArray(data) ? data : []);
-      if (!remoteList || remoteList.length === 0) return;
+    const data = await res.json().catch(() => null);
+    if (!data) return;
 
-      const localList = st.sentMails || [];
-      const map = new Map();
+    const remoteList = data.emails || (Array.isArray(data) ? data : []);
+    if (!remoteList || remoteList.length === 0) return;
 
-      remoteList.forEach((m) => map.set(m.id, m));
+    const localList = st.sentMails || [];
+    const map = new Map();
 
-      localList.forEach((local) => {
-        if (map.has(local.id)) {
-          const remote = map.get(local.id);
-          const to = (remote.to && remote.to !== "Unknown Recipient") ? remote.to : (local.to || remote.to);
-          const subject = (remote.subject && remote.subject !== "Important Email" && remote.subject !== "(No Subject)") 
-            ? remote.subject 
-            : (local.subject || remote.subject);
+    remoteList.forEach((m) => map.set(m.id, m));
 
-          map.set(local.id, {
-            ...local,
-            ...remote,
-            to,
-            subject,
-          });
-        } else {
-          map.set(local.id, local);
-        }
-      });
+    localList.forEach((local) => {
+      if (map.has(local.id)) {
+        const remote = map.get(local.id);
+        const to = (remote.to && remote.to !== "Unknown Recipient") ? remote.to : (local.to || remote.to);
+        const subject = (remote.subject && remote.subject !== "Important Email" && remote.subject !== "(No Subject)") 
+          ? remote.subject 
+          : (local.subject || remote.subject);
 
-      const merged = Array.from(map.values()).sort((a, b) => new Date(b.sentAt || 0) - new Date(a.sentAt || 0));
-      chrome.storage.local.set({ sentMails: merged.slice(0, 50) });
+        map.set(local.id, {
+          ...local,
+          ...remote,
+          to,
+          subject,
+        });
+      } else {
+        map.set(local.id, local);
+      }
     });
+
+    const merged = Array.from(map.values()).sort((a, b) => new Date(b.sentAt || 0) - new Date(a.sentAt || 0));
+    await chrome.storage.local.set({ sentMails: merged.slice(0, 50) });
   } catch (err) {
-    console.debug("[Background] Sync error:", err);
+    // Silently handle any transient network or storage drops
   }
 }
 
