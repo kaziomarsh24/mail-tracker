@@ -577,12 +577,12 @@
   <!-- Header -->
   <div class="header">
     <div class="brand">
-      <div class="brand-icon">📨</div>
+      <img src="icons/icon16.png" alt="MailTracker" style="width:16px; height:16px; border-radius:3px;">
       <div class="brand-title">MailTracker</div>
       <span class="brand-pill">ACTIVE</span>
     </div>
     <div class="header-actions">
-      <button class="btn-dashboard" id="openDashboardBtn" title="Open Full-Screen Dashboard">📊 Full UI ↗</button>
+      <button class="btn-dashboard" id="openDashboardBtn" title="Open Full-Screen Dashboard"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>Full UI</button>
       <div class="sync-indicator">
         <span class="sync-dot" id="syncDot" title="Live sync with Cloudflare Worker"></span>
         <span id="syncText">Live</span>
@@ -625,7 +625,7 @@
   <!-- Custom Domain Setting Card (Collapsible) -->
   <div class="card" style="padding:10px 12px; margin-bottom:12px;">
     <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" id="domainToggleHeader">
-      <span style="font-size:11px; font-weight:600; color:var(--text-secondary);">⚙️ Tracker Domain</span>
+      <span style="font-size:11px; font-weight:600; color:var(--text-secondary); display:flex; align-items:center; gap:5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>Tracker Domain</span>
       <span style="font-size:10px; color:#0284c7;" id="domainStatusLbl">Default Worker</span>
     </div>
     <div id="domainBox" style="display:none; margin-top:8px; padding-top:8px; border-top:1px dashed var(--border-color);">
@@ -639,7 +639,7 @@
 
   <!-- Test Alert Button -->
   <button class="btn-test" id="testBtn">
-    <span>⚡ Send Test Alert to Telegram</span>
+    <span style="display:flex; align-items:center; justify-content:center; gap:6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Send Test Alert to Telegram</span>
   </button>
 
   <!-- Quick Stats Counter -->

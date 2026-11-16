@@ -666,13 +666,19 @@ function handleWebDashboard(request, url, env) {
       tb.innerHTML = '';
       emails.forEach(m => {
         const s = (m.status || 'SENT').toUpperCase();
-        let tag = '<span class="tag tag-sent">🚀 Sent</span>';
-        if (s === 'CLICKED') tag = '<span class="tag tag-click">🎯 Clicked</span>';
-        else if (s === 'OPENED' || m.openCount > 0) tag = '<span class="tag tag-open">👀 Opened (' + (m.openCount || 1) + 'x)</span>';
-        else if (s === 'DELIVERED') tag = '<span class="tag tag-deliv">📥 Delivered</span>';
+        const svgSent = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>';
+        const svgDeliv = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>';
+        const svgOpen = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+        const svgClick = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:4px;"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>';
+        const svgTrash = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+
+        let tag = '<span class="tag tag-sent">' + svgSent + 'Sent</span>';
+        if (s === 'CLICKED') tag = '<span class="tag tag-click">' + svgClick + 'Clicked</span>';
+        else if (s === 'OPENED' || m.openCount > 0) tag = '<span class="tag tag-open">' + svgOpen + 'Opened (' + (m.openCount || 1) + 'x)</span>';
+        else if (s === 'DELIVERED') tag = '<span class="tag tag-deliv">' + svgDeliv + 'Delivered</span>';
 
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td><b>' + esc(m.to||'N/A') + '</b></td><td>' + esc(m.subject||'(No Subject)') + '</td><td>' + tag + '</td><td><b>' + (m.openCount||0) + 'x</b></td><td>' + (m.sentAt ? new Date(m.sentAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—') + '</td><td><button class="del-btn" data-id="' + esc(m.id) + '" title="Delete Record">🗑️</button></td>';
+        tr.innerHTML = '<td><b>' + esc(m.to||'N/A') + '</b></td><td>' + esc(m.subject||'(No Subject)') + '</td><td>' + tag + '</td><td><b>' + (m.openCount||0) + 'x</b></td><td>' + (m.sentAt ? new Date(m.sentAt).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : '—') + '</td><td><button class="del-btn" data-id="' + esc(m.id) + '" title="Delete Record">' + svgTrash + '</button></td>';
         
         const detailTr = document.createElement('tr');
         detailTr.style.display = openSet.has(m.id) ? 'table-row' : 'none';

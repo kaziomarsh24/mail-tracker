@@ -3,6 +3,13 @@ const DEFAULT_WORKER_URL = "https://mailtracker.softeng-kaziomar.workers.dev";
 const CUSTOM_DOMAIN_URL = "https://t.snapclip.tech";
 const DEFAULT_ADMIN_SECRET = "omar_track_sec_2026";
 
+const SVG_ICONS = {
+  sent: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  delivered: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>`,
+  opened: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  clicked: `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:3px;"><path d="m3 3 7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="m13 13 6 6"/></svg>`
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const toggle = document.getElementById("trackingToggle");
   const toggleSubtitle = document.getElementById("toggleSubtitle");
@@ -134,16 +141,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const openCount = mail.openCount || (mail.opens ? mail.opens.length : 0) || 0;
 
     if (status === "CLICKED" || mail.clicked) {
-      return `<span class="status-badge clicked">🎯 Link Clicked</span>`;
+      return `<span class="status-badge clicked">${SVG_ICONS.clicked}Clicked</span>`;
     }
     if (status === "OPENED" || openCount > 0) {
       const countLabel = openCount > 1 ? `Opened ${openCount}x` : "Opened";
-      return `<span class="status-badge opened">👀 ${countLabel}</span>`;
+      return `<span class="status-badge opened">${SVG_ICONS.opened}${countLabel}</span>`;
     }
     if (status === "DELIVERED") {
-      return `<span class="status-badge delivered">📥 Delivered</span>`;
+      return `<span class="status-badge delivered">${SVG_ICONS.delivered}Delivered</span>`;
     }
-    return `<span class="status-badge sent">🚀 Sent</span>`;
+    return `<span class="status-badge sent">${SVG_ICONS.sent}Sent</span>`;
   }
 
   // 4. Relative Time Formatter
